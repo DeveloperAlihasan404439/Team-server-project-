@@ -10,7 +10,7 @@ app.use(express.json());
 
 const port = process.env.PORT || 3000;
 
-const mailslurp = new MailSlurp({ apiKey: "aa47087dedcfaa74704d97602a325afd98149e957ea7b884f71519418faa0a8e" });
+const mailslurpe = new MailSlurp({ apiKey: "aa47087dedcfaa74704d97602a325afd98149e957ea7b884f71519418faa0a8e" });
 
 app.get('/', (req, res) => {
     res.send('Product server is running');
@@ -51,7 +51,7 @@ async function run() {
             try {
                 const email1 = req.body;
 
-                const { id: inboxId, emailAddress } = await mailslurp.inboxController.createInboxWithDefaults();
+                const { id: inboxId, emailAddress } = await mailslurpe.inboxController.createInboxWithDefaults();
 
                 await user.insertOne({ inboxId, email: email1, emailAddress });
 
@@ -70,7 +70,7 @@ async function run() {
                 const inboxId = req.params.inboxId;
         
                 // Retrieve emails for the specified inboxId
-                const emails = await mailslurp.inboxController.getEmails({ inboxId });
+                const emails = await mailslurpe.inboxController.getEmails({ inboxId });
         
                 // Format the emails for response
                 const formattedEmails = emails.map(email => ({
