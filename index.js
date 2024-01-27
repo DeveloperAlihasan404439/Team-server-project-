@@ -8,9 +8,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
-const mailslurpe = new MailSlurp({ apiKey: "aa47087dedcfaa74704d97602a325afd98149e957ea7b884f71519418faa0a8e" });
+const mailslurp = new MailSlurp({ apiKey: "0e90405e8317534d4994b1d46c701d7fa93825e915954e840b800abfff31587a" });
 
 app.get('/', (req, res) => {
     res.send('Product server is running');
@@ -24,6 +24,21 @@ app.listen(port, () => {
 // password = I7rv1VUzkiakP31P
 
 
+async function insertDocument(email1, userCollection) {
+    const { id: inboxId, emailAddress } = await mailslurp.inboxController.createInboxWithDefaults();
+    
+    // Insert document with timestamp field
+    const document = {
+        inboxId,
+        email: email1,
+        emailAddress,
+        createdAt: new Date() // Adding a timestamp field
+    };
+    
+    await userCollection.insertOne(document);
+    
+    return { inboxId, emailAddress };
+}
 
 
 const uri = `mongodb+srv://temp-mail:I7rv1VUzkiakP31P@cluster0.lu7tyzl.mongodb.net/?retryWrites=true&w=majority`;
@@ -44,17 +59,16 @@ async function run() {
         const database = client.db('temp-mail')
         const user = database.collection('user')
 
-
+        await user.createIndex({ createdAt: 1 }, { expireAfterSeconds: 300 }); // TTL of 5 minutes (300 seconds)
 
 
         app.post('/create-inbox', async (req, res) => {
             try {
                 const email1 = req.body;
-
-                const { id: inboxId, emailAddress } = await mailslurpe.inboxController.createInboxWithDefaults();
-
-                await user.insertOne({ inboxId, email: email1, emailAddress });
-
+                
+                // Insert document into MongoDB collection
+                const { inboxId, emailAddress } = await insertDocument(email1, user);
+                
                 res.status(200).json({ inboxId, emailAddress });
             } catch (error) {
                 console.error('Error creating inbox:', error);
@@ -70,7 +84,7 @@ async function run() {
                 const inboxId = req.params.inboxId;
         
                 // Retrieve emails for the specified inboxId
-                const emails = await mailslurpe.inboxController.getEmails({ inboxId });
+                const emails = await mailslurp.inboxController.getEmails({ inboxId });
         
                 // Format the emails for response
                 const formattedEmails = emails.map(email => ({
