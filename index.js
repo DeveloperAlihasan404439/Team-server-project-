@@ -41,7 +41,7 @@ async function insertDocument(email1, userCollection) {
 }
 
 
-const uri = `mongodb+srv://temp-mail:I7rv1VUzkiakP31P@cluster0.lu7tyzl.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.wjgws1x.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -56,10 +56,10 @@ async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
         //await client.connect();
-        const database = client.db('temp-mail')
-        const user = database.collection('user')
+        const userCollection = client.db('temp-mail').collection('user')
+        const articleCollection = client.db('temp-mail').collection('article')
 
-        await user.createIndex({ createdAt: 1 }, { expireAfterSeconds: 300 }); // TTL of 5 minutes (300 seconds)
+        await userCollection.createIndex({ createdAt: 1 }, { expireAfterSeconds: 300 }); // TTL of 5 minutes (300 seconds)
 
 
         app.post('/create-inbox', async (req, res) => {
@@ -75,10 +75,6 @@ async function run() {
                 res.status(500).json({ error: 'Error creating inbox' });
             }
         });
-
-
-
-
         app.get('/get-emails/:inboxId', async (req, res) => {
             try {
                 const inboxId = req.params.inboxId;
@@ -99,15 +95,12 @@ async function run() {
             }
         });
         
-
-
-
         app.get("/users/:email", async (req, res) => {
             try {
                 const userEmail = req.params.email;
                 const query = { "email.userEmail": userEmail }; // Adjust the property name accordingly
 
-                const result = await user.findOne(query);
+                const result = await userCollection.findOne(query);
                 res.send(result);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -115,7 +108,10 @@ async function run() {
             }
         });
 
-
+        app.get('/article', async(req, res) =>{
+            const result = await articleCollection.find().toArray()
+            res.send(result)
+        })
 
         // Send a ping to confirm a successful connection
         //await client.db("admin").command({ ping: 1 });
