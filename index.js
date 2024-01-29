@@ -26,7 +26,7 @@ app.listen(port, () => {
 
 async function insertDocument(email1, userCollection) {
     const { id: inboxId, emailAddress } = await mailslurp.inboxController.createInboxWithDefaults();
-    
+
     // Insert document with timestamp field
     const document = {
         inboxId,
@@ -34,9 +34,9 @@ async function insertDocument(email1, userCollection) {
         emailAddress,
         createdAt: new Date() // Adding a timestamp field
     };
-    
+
     await userCollection.insertOne(document);
-    
+
     return { inboxId, emailAddress };
 }
 
@@ -58,6 +58,7 @@ async function run() {
         //await client.connect();
         const database = client.db('temp-mail')
         const user = database.collection('user')
+        const userInfo = database.collection('userInfo')
 
         await user.createIndex({ createdAt: 1 }, { expireAfterSeconds: 300 }); // TTL of 5 minutes (300 seconds)
 
@@ -65,10 +66,10 @@ async function run() {
         app.post('/create-inbox', async (req, res) => {
             try {
                 const email1 = req.body;
-                
+
                 // Insert document into MongoDB collection
                 const { inboxId, emailAddress } = await insertDocument(email1, user);
-                
+
                 res.status(200).json({ inboxId, emailAddress });
             } catch (error) {
                 console.error('Error creating inbox:', error);
@@ -82,23 +83,23 @@ async function run() {
         app.get('/get-emails/:inboxId', async (req, res) => {
             try {
                 const inboxId = req.params.inboxId;
-        
+
                 // Retrieve emails for the specified inboxId
                 const emails = await mailslurp.inboxController.getEmails({ inboxId });
-        
+
                 // Format the emails for response
                 const formattedEmails = emails.map(email => ({
                     subject: email.subject,
                     body: email.body,
                 }));
-        
+
                 res.json(formattedEmails);
             } catch (error) {
                 console.error('Error fetching emails. Error details:', error.message);
                 res.status(500).json({ error: 'Error fetching emails', message: error.message });
             }
         });
-        
+
 
 
 
@@ -114,6 +115,24 @@ async function run() {
                 res.status(500).json({ error: 'Error fetching user' });
             }
         });
+
+        // checking users if exist or not exist 
+
+        app.post("/check-user", async (req, res) => {
+            const userData = req.body
+            const query = { userEmail: userData.userEmail }
+            const isUserExist = await userInfo.findOne(query);
+            if (isUserExist) {
+                return res.send({ message: 'UserExist', InsertedId: null })
+            }
+            const result = await userInfo.insertOne(userData)
+            res.send(result)
+        })
+
+        app.get('/all-users', async (req, res) =>{
+            const result = await userInfo.find().toArray();
+            res.send(result)
+        })
 
 
 
