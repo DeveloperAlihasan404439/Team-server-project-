@@ -59,8 +59,10 @@ async function run() {
         const database = client.db('temp-mail')
         const user = database.collection('user')
         const userInfo = database.collection('userInfo')
+        const article = database.collection('articles')
 
         await user.createIndex({ createdAt: 1 }, { expireAfterSeconds: 300 }); // TTL of 5 minutes (300 seconds)
+
 
 
         app.post('/create-inbox', async (req, res) => {
@@ -129,10 +131,18 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/all-users', async (req, res) =>{
+        // get all the user from userInfo
+
+        app.get('/all-users', async (req, res) => {
             const result = await userInfo.find().toArray();
             res.send(result)
         })
+
+        app.get('/article', async (req, res) =>{
+            const result = await article.find().toArray();
+            res.send(result)
+        })
+
 
 
 
