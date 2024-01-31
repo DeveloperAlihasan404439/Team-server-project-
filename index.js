@@ -10,7 +10,7 @@ app.use(express.json());
 
 const port = process.env.PORT || 5000;
 
-const mailslurp = new MailSlurp({ apiKey: "0e90405e8317534d4994b1d46c701d7fa93825e915954e840b800abfff31587a" });
+const mailslurp = new MailSlurp({ apiKey: "7fea0fff298aa5624891d32ae3ff1f3a22afde5c4d866e50385ac9b8719962bc" });
 
 app.get('/', (req, res) => {
     res.send('Product server is running');
@@ -59,10 +59,8 @@ async function run() {
         const database = client.db('temp-mail')
         const user = database.collection('user')
         const userInfo = database.collection('userInfo')
-        const article = database.collection('articles')
 
-        await user.createIndex({ createdAt: 1 }, { expireAfterSeconds: 300 }); // TTL of 5 minutes (300 seconds)
-
+        //await user.createIndex({ createdAt: 1 }, { expireAfterSeconds: 300 }); // TTL of 5 minutes (300 seconds)
 
 
         app.post('/create-inbox', async (req, res) => {
@@ -85,16 +83,16 @@ async function run() {
         app.get('/get-emails/:inboxId', async (req, res) => {
             try {
                 const inboxId = req.params.inboxId;
-
+                console.log('inbox id', inboxId)
                 // Retrieve emails for the specified inboxId
                 const emails = await mailslurp.inboxController.getEmails({ inboxId });
-
+        
                 // Format the emails for response
                 const formattedEmails = emails.map(email => ({
                     subject: email.subject,
                     body: email.body,
                 }));
-
+        
                 res.json(formattedEmails);
             } catch (error) {
                 console.error('Error fetching emails. Error details:', error.message);
@@ -131,18 +129,10 @@ async function run() {
             res.send(result)
         })
 
-        // get all the user from userInfo
-
-        app.get('/all-users', async (req, res) => {
+        app.get('/all-users', async (req, res) =>{
             const result = await userInfo.find().toArray();
             res.send(result)
         })
-
-        app.get('/article', async (req, res) =>{
-            const result = await article.find().toArray();
-            res.send(result)
-        })
-
 
 
 
