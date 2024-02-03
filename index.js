@@ -1,15 +1,12 @@
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
-
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
 const { default: MailSlurp } = require('mailslurp-client');
 const app = express();
 app.use(cors());
 app.use(express.json());
-
 const port = process.env.PORT || 5000;
-
 const mailslurp = new MailSlurp({ apiKey: "7fea0fff298aa5624891d32ae3ff1f3a22afde5c4d866e50385ac9b8719962bc" });
 
 app.get('/', (req, res) => {
@@ -32,7 +29,6 @@ async function insertDocument(email1, userCollection) {
         inboxId,
         email: email1,
         emailAddress,
-        createdAt: new Date() // Adding a timestamp field
     };
 
     await userCollection.insertOne(document);
@@ -41,7 +37,7 @@ async function insertDocument(email1, userCollection) {
 }
 
 
-const uri = `mongodb+srv://temp-mail:I7rv1VUzkiakP31P@cluster0.lu7tyzl.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${'your-database-name'}:${'your-database-password'}@cluster0.lu7tyzl.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -59,8 +55,8 @@ async function run() {
         const database = client.db('temp-mail')
         const user = database.collection('user')
         const userInfo = database.collection('userInfo')
+        const article = database.collection('articles')
 
-        //await user.createIndex({ createdAt: 1 }, { expireAfterSeconds: 300 }); // TTL of 5 minutes (300 seconds)
 
 
         app.post('/create-inbox', async (req, res) => {
@@ -86,13 +82,13 @@ async function run() {
                 console.log('inbox id', inboxId)
                 // Retrieve emails for the specified inboxId
                 const emails = await mailslurp.inboxController.getEmails({ inboxId });
-        
+
                 // Format the emails for response
                 const formattedEmails = emails.map(email => ({
                     subject: email.subject,
                     body: email.body,
                 }));
-        
+
                 res.json(formattedEmails);
             } catch (error) {
                 console.error('Error fetching emails. Error details:', error.message);
@@ -129,11 +125,22 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/all-users', async (req, res) =>{
+        app.get('/all-users', async (req, res) => {
             const result = await userInfo.find().toArray();
             res.send(result)
         })
 
+        app.get('/article', async (req, res) => {
+            const result = await article.find().toArray();
+            res.send(result)
+        })
+
+        app.get('/article/:id', async (req, res) =>{
+            const id = req.params.id
+            const query = {_id: new ObjectId(id)}
+            const result = await article.findOne(query);
+            res.send(result)
+        })
 
 
         // Send a ping to confirm a successful connection
