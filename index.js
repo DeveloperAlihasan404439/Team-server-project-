@@ -1,16 +1,13 @@
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-
 const express = require('express');
 const cors = require('cors');
 const { default: MailSlurp } = require('mailslurp-client');
 const app = express();
 app.use(cors());
 app.use(express.json());
-
 const port = process.env.PORT || 5000;
-
-const mailslurp = new MailSlurp({ apiKey: "0e90405e8317534d4994b1d46c701d7fa93825e915954e840b800abfff31587a" });
+const mailslurp = new MailSlurp({ apiKey: "7fea0fff298aa5624891d32ae3ff1f3a22afde5c4d866e50385ac9b8719962bc" });
 
 app.get('/', (req, res) => {
     res.send('Product server is running');
@@ -26,22 +23,21 @@ app.listen(port, () => {
 
 async function insertDocument(email1, userCollection) {
     const { id: inboxId, emailAddress } = await mailslurp.inboxController.createInboxWithDefaults();
-    
+
     // Insert document with timestamp field
     const document = {
         inboxId,
         email: email1,
         emailAddress,
-        createdAt: new Date() // Adding a timestamp field
     };
-    
+
     await userCollection.insertOne(document);
-    
+
     return { inboxId, emailAddress };
 }
 
 
-const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.wjgws1x.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${'your-database-name'}:${'your-database-password'}@cluster0.lu7tyzl.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -56,19 +52,20 @@ async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
         //await client.connect();
-        const userCollection = client.db('temp-mail').collection('user')
-        const articleCollection = client.db('temp-mail').collection('article')
+        const database = client.db('temp-mail')
+        const user = database.collection('user')
+        const userInfo = database.collection('userInfo')
+        const article = database.collection('articles')
 
-        await userCollection.createIndex({ createdAt: 1 }, { expireAfterSeconds: 300 }); // TTL of 5 minutes (300 seconds)
 
 
         app.post('/create-inbox', async (req, res) => {
             try {
                 const email1 = req.body;
-                
+
                 // Insert document into MongoDB collection
                 const { inboxId, emailAddress } = await insertDocument(email1, user);
-                
+
                 res.status(200).json({ inboxId, emailAddress });
             } catch (error) {
                 console.error('Error creating inbox:', error);
@@ -78,23 +75,26 @@ async function run() {
         app.get('/get-emails/:inboxId', async (req, res) => {
             try {
                 const inboxId = req.params.inboxId;
-        
+                console.log('inbox id', inboxId)
                 // Retrieve emails for the specified inboxId
                 const emails = await mailslurp.inboxController.getEmails({ inboxId });
-        
+
                 // Format the emails for response
                 const formattedEmails = emails.map(email => ({
                     subject: email.subject,
                     body: email.body,
                 }));
-        
+
                 res.json(formattedEmails);
             } catch (error) {
                 console.error('Error fetching emails. Error details:', error.message);
                 res.status(500).json({ error: 'Error fetching emails', message: error.message });
             }
         });
-        
+
+
+
+
         app.get("/users/:email", async (req, res) => {
             try {
                 const userEmail = req.params.email;
@@ -108,14 +108,33 @@ async function run() {
             }
         });
 
-        app.get('/article', async(req, res) =>{
-            const result = await articleCollection.find().toArray()
+        // checking users if exist or not exist 
+
+        app.post("/check-user", async (req, res) => {
+            const userData = req.body
+            const query = { userEmail: userData.userEmail }
+            const isUserExist = await userInfo.findOne(query);
+            if (isUserExist) {
+                return res.send({ message: 'UserExist', InsertedId: null })
+            }
+            const result = await userInfo.insertOne(userData)
             res.send(result)
         })
-        app.get('/article/:id', async(req, res) =>{
+
+        app.get('/all-users', async (req, res) => {
+            const result = await userInfo.find().toArray();
+            res.send(result)
+        })
+
+        app.get('/article', async (req, res) => {
+            const result = await article.find().toArray();
+            res.send(result)
+        })
+
+        app.get('/article/:id', async (req, res) =>{
             const id = req.params.id
-            const query = {_id : new ObjectId(id)}
-            const result = await articleCollection.findOne(query)
+            const query = {_id: new ObjectId(id)}
+            const result = await article.findOne(query);
             res.send(result)
         })
 

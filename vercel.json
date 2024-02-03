@@ -1,6 +1,11 @@
 {
+<<<<<<< HEAD
+    "version" : 2,
+    "builds":[
+=======
     "version": 2,
     "builds": [
+>>>>>>> ffa3b6f8d0dbb8b930bbc315f6aeced5437f4752
         {
             "src": "./index.js",
             "use": "@vercel/node"
@@ -8,7 +13,11 @@
     ],
     "routes": [
         {
+<<<<<<< HEAD
+            "src":"/(.*)",
+=======
             "src": "/(.*)",
+>>>>>>> ffa3b6f8d0dbb8b930bbc315f6aeced5437f4752
             "dest": "/",
             "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
         }
