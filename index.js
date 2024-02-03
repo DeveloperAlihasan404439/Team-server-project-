@@ -72,10 +72,6 @@ async function run() {
                 res.status(500).json({ error: 'Error creating inbox' });
             }
         });
-
-
-
-
         app.get('/get-emails/:inboxId', async (req, res) => {
             try {
                 const inboxId = req.params.inboxId;
@@ -104,7 +100,7 @@ async function run() {
                 const userEmail = req.params.email;
                 const query = { "email.userEmail": userEmail }; // Adjust the property name accordingly
 
-                const result = await user.findOne(query);
+                const result = await userCollection.findOne(query);
                 res.send(result);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -142,13 +138,10 @@ async function run() {
             res.send(result)
         })
 
-
-        // Send a ping to confirm a successful connection
-        //await client.db("admin").command({ ping: 1 });
+      
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
-        // Ensures that the client will close when you finish/error
-        // await client.close();
+        
     }
 }
 run().catch(console.dir);
