@@ -2,10 +2,16 @@ require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
+const pdfParse = require('pdf-parse');
 const { default: MailSlurp } = require('mailslurp-client');
+const bodyParser = require('body-parser');
+const PDFDocument = require('pdfkit');
+// Specify the path to the FFmpeg executable
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
 const port = process.env.PORT || 5000;
 const mailslurp = new MailSlurp({ apiKey: "7fea0fff298aa5624891d32ae3ff1f3a22afde5c4d866e50385ac9b8719962bc" });
 
@@ -37,7 +43,7 @@ async function insertDocument(email1, userCollection) {
 }
 
 
-const uri = `mongodb+srv://${'your-database-name'}:${'your-database-password'}@cluster0.lu7tyzl.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://temp-mail:I7rv1VUzkiakP31P@cluster0.lu7tyzl.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -72,6 +78,10 @@ async function run() {
                 res.status(500).json({ error: 'Error creating inbox' });
             }
         });
+
+
+
+
         app.get('/get-emails/:inboxId', async (req, res) => {
             try {
                 const inboxId = req.params.inboxId;
@@ -100,7 +110,7 @@ async function run() {
                 const userEmail = req.params.email;
                 const query = { "email.userEmail": userEmail }; // Adjust the property name accordingly
 
-                const result = await userCollection.findOne(query);
+                const result = await user.findOne(query);
                 res.send(result);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -131,17 +141,64 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/article/:id', async (req, res) =>{
+        app.get('/article/:id', async (req, res) => {
             const id = req.params.id
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await article.findOne(query);
             res.send(result)
         })
 
-      
+        // text extractor from pdf file
+
+        app.post('/extractTextFromPDF', async (req, res) => {
+            const { pdfData } = req.body;
+            try {
+                const buffer = Buffer.from(pdfData, 'base64');
+                const extractedText = await extractTextFromPDFWithPdfParse(buffer);
+                res.status(200).json({ text: extractedText });
+            } catch (error) {
+                console.error('Error extracting text from PDF:', error);
+                res.status(500).json({ error: 'Error extracting text from PDF' });
+            }
+        });
+
+        async function extractTextFromPDFWithPdfParse(buffer) {
+            return new Promise((resolve, reject) => {
+                pdfParse(buffer).then(function (data) {
+                    resolve(data.text);
+                });
+            });
+        }
+
+        app.post('/api/convertToPdf', (req, res) => {
+            const { textInput, allStyles } = req.body;
+            const doc = new PDFDocument();
+        
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'attachment; filename="converted.pdf"');
+            doc.pipe(res);
+        
+            allStyles?.forEach(st => {
+                doc.font('Helvetica');
+                doc.fontSize(st.fontSize || 12);
+                doc.fillColor(st.textColor || 'black');
+                doc.text(textInput, { align: st.align || 'left' });
+            });
+        
+            doc.end();
+        });
+        
+
+
+
+
+
+        // Send a ping to confirm a successful connection
+        //await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
-        
+        // Ensures that the client will close when you finish/error
+        // await client.close();
     }
 }
 run().catch(console.dir);
