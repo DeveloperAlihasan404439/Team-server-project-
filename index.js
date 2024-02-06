@@ -2,16 +2,10 @@ require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
-const pdfParse = require('pdf-parse');
 const { default: MailSlurp } = require('mailslurp-client');
-const bodyParser = require('body-parser');
-const PDFDocument = require('pdfkit');
-// Specify the path to the FFmpeg executable
-
 const app = express();
 app.use(cors());
 app.use(express.json());
-
 const port = process.env.PORT || 5000;
 
 const mailslurp = new MailSlurp({ apiKey: "7fea0fff298aa5624891d32ae3ff1f3a22afde5c4d866e50385ac9b8719962bc" });
@@ -30,8 +24,8 @@ app.listen(port, () => {
 
 
 
-
-const uri = `mongodb+srv://temp-mail:I7rv1VUzkiakP31P@cluster0.lu7tyzl.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.wjgws1x.mongodb.net/?retryWrites=true&w=majority`;
+// const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.lu7tyzl.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -53,7 +47,7 @@ async function run() {
         const apiKey = database.collection('apiKey')
 
 
-        const something = async () => {
+        const getDynamicApi = async () => {
             const result = await apiKey.find().toArray();
             const apiKeyValue = result[0]?.apiKey;
             const mailSlurp = new MailSlurp({ apiKey: apiKeyValue });
@@ -103,7 +97,7 @@ async function run() {
             });
         }
 
-        something();
+        getDynamicApi();
 
         app.get('/mailSlurp', async (req, res) => {
             const result = await apiKey.find().toArray();
@@ -117,7 +111,7 @@ async function run() {
                 const userEmail = req.params.email;
                 const query = { "email.userEmail": userEmail }; // Adjust the property name accordingly
 
-                const result = await user.findOne(query);
+                const result = await userCollection.findOne(query);
                 res.send(result);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -125,11 +119,25 @@ async function run() {
             }
         });
 
+        app.get('/users', async(req, res)=>{
+            const result = await userInfo.find().toArray()
+            res.send(result)
+        })
+        app.patch('/users', async(req, res)=>{
+            const id = req.query.id;
+            const filter = {_id: new ObjectId(id)}
+            const updatedDoc = {
+                $set: {
+                  role: "admin"
+                }
+              }
+            const result = await userInfo.updateOne(filter, updatedDoc)
+            res.send(result)
+        })
         // checking users if exist or not exist 
-
-        app.post("/check-user", async (req, res) => {
+        app.post("/users", async (req, res) => {
             const userData = req.body
-            const query = { userEmail: userData.userEmail }
+            const query = { email: userData.email }
             const isUserExist = await userInfo.findOne(query);
             if (isUserExist) {
                 return res.send({ message: 'UserExist', InsertedId: null })
@@ -141,16 +149,16 @@ async function run() {
         app.get('/all-users', async (req, res) => {
             const result = await userInfo.find().toArray();
             res.send(result)
-        })
-
+        });
+        // ----------------- article api create ----------------
         app.get('/article', async (req, res) => {
             const result = await article.find().toArray();
             res.send(result)
         })
 
-        app.get('/article/:id', async (req, res) => {
+        app.get('/article/:id', async (req, res) =>{
             const id = req.params.id
-            const query = { _id: new ObjectId(id) }
+            const query = {_id: new ObjectId(id)}
             const result = await article.findOne(query);
             res.send(result)
         })
@@ -229,8 +237,7 @@ async function run() {
         //await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
-        // Ensures that the client will close when you finish/error
-        // await client.close();
+        
     }
 }
 run().catch(console.dir);
