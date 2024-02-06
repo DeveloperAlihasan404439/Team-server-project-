@@ -13,6 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 const port = process.env.PORT || 5000;
+
 const mailslurp = new MailSlurp({ apiKey: "7fea0fff298aa5624891d32ae3ff1f3a22afde5c4d866e50385ac9b8719962bc" });
 
 app.get('/', (req, res) => {
@@ -27,20 +28,7 @@ app.listen(port, () => {
 // password = I7rv1VUzkiakP31P
 
 
-async function insertDocument(email1, userCollection) {
-    const { id: inboxId, emailAddress } = await mailslurp.inboxController.createInboxWithDefaults();
 
-    // Insert document with timestamp field
-    const document = {
-        inboxId,
-        email: email1,
-        emailAddress,
-    };
-
-    await userCollection.insertOne(document);
-
-    return { inboxId, emailAddress };
-}
 
 
 const uri = `mongodb+srv://temp-mail:I7rv1VUzkiakP31P@cluster0.lu7tyzl.mongodb.net/?retryWrites=true&w=majority`;
@@ -62,47 +50,66 @@ async function run() {
         const user = database.collection('user')
         const userInfo = database.collection('userInfo')
         const article = database.collection('articles')
+        const apiKey = database.collection('apiKey')
 
 
+        const something = async () => {
+            const result = await apiKey.find().toArray();
+            const apiKeyValue = result[0]?.apiKey;
+            const mailSlurp = new MailSlurp({ apiKey: apiKeyValue });
 
-        app.post('/create-inbox', async (req, res) => {
-            try {
-                const email1 = req.body;
+            app.post('/create-inbox', async (req, res) => {
+                try {
+                    const email1 = req.body;
+                    const { inboxId, emailAddress } = await insertDocument(email1, user);
 
-                // Insert document into MongoDB collection
-                const { inboxId, emailAddress } = await insertDocument(email1, user);
+                    res.status(200).json({ inboxId, emailAddress });
+                } catch (error) {
+                    console.error('Error creating inbox:', error);
+                    res.status(500).json({ error: 'Error creating inbox' });
+                }
+            });
 
-                res.status(200).json({ inboxId, emailAddress });
-            } catch (error) {
-                console.error('Error creating inbox:', error);
-                res.status(500).json({ error: 'Error creating inbox' });
+            async function insertDocument(email1, userCollection) {
+                const { id: inboxId, emailAddress } = await mailSlurp.inboxController.createInboxWithDefaults();
+
+                const document = {
+                    inboxId,
+                    email: email1,
+                    emailAddress,
+                };
+
+                await userCollection.insertOne(document);
+
+                return { inboxId, emailAddress };
             }
-        });
 
 
+            app.get('/get-emails/:inboxId', async (req, res) => {
+                try {
+                    const inboxId = req.params.inboxId;
+                    const emails = await mailSlurp.inboxController.getEmails({ inboxId });
 
+                    const formattedEmails = emails.map(email => ({
+                        subject: email.subject,
+                        body: email.body,
+                    }));
 
-        app.get('/get-emails/:inboxId', async (req, res) => {
-            try {
-                const inboxId = req.params.inboxId;
-                console.log('inbox id', inboxId)
-                // Retrieve emails for the specified inboxId
-                const emails = await mailslurp.inboxController.getEmails({ inboxId });
+                    res.json(formattedEmails);
+                } catch (error) {
+                    console.error('Error fetching emails. Error details:', error.message);
+                    res.status(500).json({ error: 'Error fetching emails', message: error.message });
+                }
+            });
+        }
 
-                // Format the emails for response
-                const formattedEmails = emails.map(email => ({
-                    subject: email.subject,
-                    body: email.body,
-                }));
+        something();
 
-                res.json(formattedEmails);
-            } catch (error) {
-                console.error('Error fetching emails. Error details:', error.message);
-                res.status(500).json({ error: 'Error fetching emails', message: error.message });
-            }
-        });
-
-
+        app.get('/mailSlurp', async (req, res) => {
+            const result = await apiKey.find().toArray();
+            const apiKeyValue = result[0]?.apiKey;
+            res.send(apiKeyValue)
+        })
 
 
         app.get("/users/:email", async (req, res) => {
@@ -173,21 +180,46 @@ async function run() {
         app.post('/api/convertToPdf', (req, res) => {
             const { textInput, allStyles } = req.body;
             const doc = new PDFDocument();
-        
+
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', 'attachment; filename="converted.pdf"');
             doc.pipe(res);
-        
+
             allStyles?.forEach(st => {
                 doc.font('Helvetica');
                 doc.fontSize(st.fontSize || 12);
                 doc.fillColor(st.textColor || 'black');
                 doc.text(textInput, { align: st.align || 'left' });
             });
-        
+
             doc.end();
         });
-        
+
+        app.get('/createdInboxes', async (req, res) => {
+            const result = await user.find().toArray();
+            res.send(result)
+        })
+
+        app.patch('/updateApi/:apiKey', async (req, res) => {
+            try {
+                const apiKey2 = req.params.apiKey;
+                const filter = { apiKey: apiKey2 };
+                const options = { upsert: true };
+                const updatedService = req.body;
+                const updateFields = {
+                    $set: {
+                        apiKey: updatedService.apiKey
+                    }
+                };
+                const result = await apiKey.updateOne(filter, updateFields, options);
+                res.send(result);
+            } catch (error) {
+                console.error(error);
+                res.status(500).send('Internal Server Error');
+            }
+        });
+
+
 
 
 
