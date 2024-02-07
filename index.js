@@ -56,6 +56,7 @@ async function run() {
         const user = database.collection('user')
         const userInfo = database.collection('userInfo')
         const article = database.collection('article')
+        const review = database.collection('review')
 
 
 
@@ -134,11 +135,6 @@ async function run() {
             const result = await userInfo.insertOne(userData)
             res.send(result)
         })
-
-        app.get('/all-users', async (req, res) => {
-            const result = await userInfo.find().toArray();
-            res.send(result)
-        });
         // ----------------- article api create ----------------
         app.get('/article', async (req, res) => {
             const result = await article.find().toArray();
@@ -162,6 +158,17 @@ async function run() {
         })
         app.post('/article', async(req, res)=>{
             const result = await article.insertOne(req.body)
+            res.send(result)
+        })
+        // ----------------- article api create ----------------
+
+        // ----------------- review api create ----------------
+        app.get('/review', async(req, res)=>{
+            const result = await review.find().toArray()
+            res.send(result)
+        })
+        app.post('/review', async(req, res)=>{
+            const result = await review.insertOne(req.body)
             res.send(result)
         })
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
