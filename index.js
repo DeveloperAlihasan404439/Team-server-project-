@@ -2,13 +2,23 @@ require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
+const pdfParse = require('pdf-parse');
 const { default: MailSlurp } = require('mailslurp-client');
+const bodyParser = require('body-parser');
+const PDFDocument = require('pdfkit');
+const http = require('http')
+// Specify the path to the FFmpeg executable
+const jwt = require('jsonwebtoken');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+const server = http.createServer(app);
+const socketIo = require('socket.io');
+const { default: axios } = require('axios');
+const io = socketIo(server);
 const port = process.env.PORT || 5000;
 
-const mailslurp = new MailSlurp({ apiKey: "7fea0fff298aa5624891d32ae3ff1f3a22afde5c4d866e50385ac9b8719962bc" });
 
 app.get('/', (req, res) => {
     res.send('Product server is running');
@@ -24,8 +34,8 @@ app.listen(port, () => {
 
 
 
-const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.wjgws1x.mongodb.net/?retryWrites=true&w=majority`;
-// const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.lu7tyzl.mongodb.net/?retryWrites=true&w=majority`;
+
+const uri = `mongodb+srv://temp-mail:I7rv1VUzkiakP31P@cluster0.lu7tyzl.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -47,8 +57,81 @@ async function run() {
         const article = database.collection('article')
         const review = database.collection('review')
 
+        const verifyToken = (req, res, next) => {
+            if (!req.headers.authorization) {
+                return res.status(401).send({ message: 'Unauthorized access' });
+            }
+            const token = req.headers.authorization.split(' ')[1];
+            jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+                if (err) {
+                    return res.status(401).send({ message: 'Unauthorized access' });
+                }
+                req.decoded = decoded;
+                next();
+            });
+        };
 
-        const getDynamicApi = async () => {
+        const getUserRole = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { userEmail: email };
+            const user = await userInfo.findOne(query);
+            if (user) {
+                req.userRole = user.role;
+                next();
+            } else {
+                res.status(403).send({ message: 'Forbidden access' });
+            }
+        };
+
+
+        const verifyUserRole = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { userEmail: email };
+            const user = await userInfo.findOne(query);
+            const isAdmin = user?.role === 'admin';
+            const pUser = user?.role === 'pUser'
+            if (!isAdmin && !pUser) {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+            next();
+        }
+
+
+        app.get('/all-users', verifyToken, getUserRole, verifyUserRole, async (req, res) => {
+            const result = await userInfo.find().toArray();
+            res.send(result);
+        });
+
+
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '1h' });
+            res.send({ token })
+        })
+
+
+        app.get('/users/admin/:email', verifyToken, async (req, res) => {
+            const email = req.params.email;
+
+            if (email !== req.decoded.email) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+
+            const query = { userEmail: email };
+            const user = await userInfo.findOne(query);
+            let admin = "admin";
+            let pUser = "pUser";
+            let ordUser = "user"
+            if (user) {
+                admin = user?.role === 'admin';
+                pUser = user?.role === 'pUser';
+                ordUser = user?.role === 'user'
+            }
+            res.send({ admin, pUser, ordUser });
+        })
+
+        const getDynamicArray = async () => {
+
             const result = await apiKey.find().toArray();
             const apiKeyValue = result[0]?.apiKey;
             const mailSlurp = new MailSlurp({ apiKey: apiKeyValue });
@@ -84,7 +167,6 @@ async function run() {
                 try {
                     const inboxId = req.params.inboxId;
                     const emails = await mailSlurp.inboxController.getEmails({ inboxId });
-
                     const formattedEmails = emails.map(email => ({
                         subject: email.subject,
                         body: email.body,
@@ -96,9 +178,13 @@ async function run() {
                     res.status(500).json({ error: 'Error fetching emails', message: error.message });
                 }
             });
+
+
+
+            // send email
         }
 
-        getDynamicApi();
+        getDynamicArray();
 
         app.get('/mailSlurp', async (req, res) => {
             const result = await apiKey.find().toArray();
@@ -112,7 +198,7 @@ async function run() {
                 const userEmail = req.params.email;
                 const query = { "email.userEmail": userEmail }; // Adjust the property name accordingly
 
-                const result = await userCollection.findOne(query);
+                const result = await user.findOne(query);
                 res.send(result);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -120,25 +206,11 @@ async function run() {
             }
         });
 
-        app.get('/users', async(req, res)=>{
-            const result = await userInfo.find().toArray()
-            res.send(result)
-        })
-        app.patch('/users', async(req, res)=>{
-            const id = req.query.id;
-            const filter = {_id: new ObjectId(id)}
-            const updatedDoc = {
-                $set: {
-                  role: "admin"
-                }
-              }
-            const result = await userInfo.updateOne(filter, updatedDoc)
-            res.send(result)
-        })
         // checking users if exist or not exist 
-        app.post("/users", async (req, res) => {
+
+        app.post("/check-user", async (req, res) => {
             const userData = req.body
-            const query = { email: userData.email }
+            const query = { userEmail: userData.userEmail }
             const isUserExist = await userInfo.findOne(query);
             if (isUserExist) {
                 return res.send({ message: 'UserExist', InsertedId: null })
@@ -152,9 +224,9 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/article/:id', async (req, res) =>{
+        app.get('/article/:id', async (req, res) => {
             const id = req.params.id
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await article.findOne(query);
             res.send(result)
         })
@@ -189,6 +261,7 @@ async function run() {
 
 
 
+
         // Send a ping to confirm a successful connection
         //await client.db("admin").command({ ping: 1 });
         // ----------------- article api create ----------------
@@ -204,7 +277,8 @@ async function run() {
         })
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
-        
+        // Ensures that the client will close when you finish/error
+        // await client.close();
     }
 }
 run().catch(console.dir);
