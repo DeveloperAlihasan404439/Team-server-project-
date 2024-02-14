@@ -53,8 +53,9 @@ async function run() {
         const database = client.db('temp-mail')
         const user = database.collection('user')
         const userInfo = database.collection('userInfo')
-        const article = database.collection('articles')
         const apiKey = database.collection('apiKey')
+        const article = database.collection('article')
+        const review = database.collection('review')
 
         const verifyToken = (req, res, next) => {
             if (!req.headers.authorization) {
@@ -217,9 +218,7 @@ async function run() {
             const result = await userInfo.insertOne(userData)
             res.send(result)
         })
-
-
-
+        // ----------------- article api create ----------------
         app.get('/article', async (req, res) => {
             const result = await article.find().toArray();
             res.send(result)
@@ -231,46 +230,6 @@ async function run() {
             const result = await article.findOne(query);
             res.send(result)
         })
-
-        // text extractor from pdf file
-
-        app.post('/extractTextFromPDF', async (req, res) => {
-            const { pdfData } = req.body;
-            try {
-                const buffer = Buffer.from(pdfData, 'base64');
-                const extractedText = await extractTextFromPDFWithPdfParse(buffer);
-                res.status(200).json({ text: extractedText });
-            } catch (error) {
-                console.error('Error extracting text from PDF:', error);
-                res.status(500).json({ error: 'Error extracting text from PDF' });
-            }
-        });
-
-        async function extractTextFromPDFWithPdfParse(buffer) {
-            return new Promise((resolve, reject) => {
-                pdfParse(buffer).then(function (data) {
-                    resolve(data.text);
-                });
-            });
-        }
-
-        app.post('/api/convertToPdf', (req, res) => {
-            const { textInput, allStyles } = req.body;
-            const doc = new PDFDocument();
-
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', 'attachment; filename="converted.pdf"');
-            doc.pipe(res);
-
-            allStyles?.forEach(st => {
-                doc.font('Helvetica');
-                doc.fontSize(st.fontSize || 12);
-                doc.fillColor(st.textColor || 'black');
-                doc.text(textInput, { align: st.align || 'left' });
-            });
-
-            doc.end();
-        });
 
         app.get('/createdInboxes', async (req, res) => {
             const result = await user.find().toArray();
@@ -305,6 +264,17 @@ async function run() {
 
         // Send a ping to confirm a successful connection
         //await client.db("admin").command({ ping: 1 });
+        // ----------------- article api create ----------------
+
+        // ----------------- review api create ----------------
+        app.get('/review', async(req, res)=>{
+            const result = await review.find().toArray()
+            res.send(result)
+        })
+        app.post('/review', async(req, res)=>{
+            const result = await review.insertOne(req.body)
+            res.send(result)
+        })
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
