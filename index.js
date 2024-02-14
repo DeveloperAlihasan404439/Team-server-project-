@@ -39,9 +39,6 @@ async function insertDocument(email1, userCollection) {
 }
 
 const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.wjgws1x.mongodb.net/?retryWrites=true&w=majority`;
-// const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.lu7tyzl.mongodb.net/?retryWrites=true&w=majority`;
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -59,6 +56,8 @@ async function run() {
     const userInfo = database.collection("userInfo");
     const article = database.collection("article");
     const review = database.collection("review");
+    const notes = database.collection("notes");
+    const blog = database.collection("blog");
 
     app.post("/create-inbox", async (req, res) => {
       try {
@@ -161,6 +160,8 @@ async function run() {
           useToHelp: articles.useToHelp,
           benefits: articles.benefits,
           suggestArticle:articles.suggestArticle,
+          like:0,
+          comment: [],
         },
       };
       const result = await article.updateOne(filter, updatedDoc);
@@ -191,6 +192,27 @@ async function run() {
       const result = await review.insertOne(req.body);
       res.send(result);
     });
+    // ----------------- review api create ----------------
+
+    // ----------------- notes api create ----------------
+    app.get('/notes', async(req, res)=>{
+      const email = req.query.email;
+      const filter = {user_Email: email}
+      const result = await notes.find(filter).toArray();
+      res.send(result);
+    })
+    app.post('/notes', async(req, res)=>{
+      const result = await notes.insertOne(req.body);
+      res.send(result);
+    })
+    // ----------------- notes api create ----------------
+    // ----------------- blog api create ----------------
+    app.get('/blog', async(req, res)=>{
+      const result = await blog.find().toArray();
+      res.send(result);
+    })
+    // ----------------- blog api create ----------------
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
