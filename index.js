@@ -89,7 +89,7 @@ async function run() {
             const query = { userEmail: email };
             const user = await userInfo.findOne(query);
             const isAdmin = user?.role === 'admin';
-            const pUser = user?.role === 'pUser'
+            // const pUser = user?.role === 'pUser' you can user role if you want to give access to admin routes
             if (!isAdmin && !pUser) {
                 return res.status(403).send({ message: 'forbidden access' });
             }
