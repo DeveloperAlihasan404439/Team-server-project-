@@ -1,11 +1,17 @@
+
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 const cors = require("cors");
 const { default: MailSlurp } = require("mailslurp-client");
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+const server = http.createServer(app);
+const socketIo = require('socket.io');
+const { default: axios } = require('axios');
+const io = socketIo(server);
 const port = process.env.PORT || 5000;
 const mailslurp = new MailSlurp({
   apiKey: "7fea0fff298aa5624891d32ae3ff1f3a22afde5c4d866e50385ac9b8719962bc",
@@ -18,9 +24,6 @@ app.get("/", (req, res) => {
 app.listen(port, () => {
   console.log(`Server is running on ${port}`);
 });
-
-// user name = temp-mail
-// password = I7rv1VUzkiakP31P
 
 async function insertDocument(email1, userCollection) {
   const { id: inboxId, emailAddress } =
@@ -39,6 +42,7 @@ async function insertDocument(email1, userCollection) {
 }
 
 const uri = `mongodb+srv://${process.env.DB_NAME}:${process.env.DB_PASS}@cluster0.wjgws1x.mongodb.net/?retryWrites=true&w=majority`;
+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
