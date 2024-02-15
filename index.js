@@ -58,6 +58,7 @@ async function run() {
     const review = database.collection("review");
     const notes = database.collection("notes");
     const blog = database.collection("blog");
+    const comment = database.collection("comment");
 
     app.post("/create-inbox", async (req, res) => {
       try {
@@ -159,14 +160,49 @@ async function run() {
           whereToUse: articles.whereToUse,
           useToHelp: articles.useToHelp,
           benefits: articles.benefits,
-          suggestArticle:articles.suggestArticle,
-          like:0,
+          suggestArticle: articles.suggestArticle,
+          like: 0,
           comment: [],
         },
       };
       const result = await article.updateOne(filter, updatedDoc);
       res.send(result);
     });
+    app.patch("/article/rejecte/:id", async (req, res) => {
+      const filter = { _id: new ObjectId(req.params.id) };
+      const updatedDoc = {
+        $set: {
+          status: 'rejecte'
+        },
+      };
+      const result = await article.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+    app.put("/article/confirm/:id", async (req, res) => {
+      const filter = { _id: new ObjectId(req.params.id) };
+      console.log(filter)
+      const updatedDoc = {
+        $set: {
+          status: 'confrom'
+        },
+      };
+      const result = await article.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
+
+    app.patch("/article/like", async (req, res) => {
+      const id = req.query.id;
+      const filter = { _id: new ObjectId(id) };
+
+      const pathData = {
+        $inc: {
+          like: +1,
+        },
+      };
+      const result = await article.updateOne(filter, pathData);
+      res.send(result);
+    });
+
     app.delete("/article", async (req, res) => {
       const filter = { _id: new ObjectId(req.query.id) };
       const result = await article.deleteOne(filter);
@@ -184,33 +220,44 @@ async function run() {
       res.send(result);
     });
     app.delete("/review", async (req, res) => {
-        const filter = { _id: new ObjectId(req.query.id) };
-        const result = await article.deleteOne(filter);
-        res.send(result);
-      });
+      const filter = { _id: new ObjectId(req.query.id) };
+      const result = await article.deleteOne(filter);
+      res.send(result);
+    });
     app.post("/review", async (req, res) => {
       const result = await review.insertOne(req.body);
       res.send(result);
     });
     // ----------------- review api create ----------------
 
+    app.get("/comment/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { id: id };
+      const result = await comment.find(filter).toArray();
+      res.send(result);
+    });
+    app.post("/comment", async (req, res) => {
+      const result = await comment.insertOne(req.body);
+      res.send(result);
+    });
+
     // ----------------- notes api create ----------------
-    app.get('/notes', async(req, res)=>{
+    app.get("/notes", async (req, res) => {
       const email = req.query.email;
-      const filter = {user_Email: email}
+      const filter = { user_Email: email };
       const result = await notes.find(filter).toArray();
       res.send(result);
-    })
-    app.post('/notes', async(req, res)=>{
+    });
+    app.post("/notes", async (req, res) => {
       const result = await notes.insertOne(req.body);
       res.send(result);
-    })
+    });
     // ----------------- notes api create ----------------
     // ----------------- blog api create ----------------
-    app.get('/blog', async(req, res)=>{
+    app.get("/blog", async (req, res) => {
       const result = await blog.find().toArray();
       res.send(result);
-    })
+    });
     // ----------------- blog api create ----------------
 
     console.log(
