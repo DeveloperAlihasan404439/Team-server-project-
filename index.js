@@ -4,27 +4,11 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 const cors = require("cors");
 const { default: MailSlurp } = require("mailslurp-client");
+const port = process.env.PORT || 5000;
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-const server = http.createServer(app);
-const socketIo = require('socket.io');
-const { default: axios } = require('axios');
-const io = socketIo(server);
-const port = process.env.PORT || 5000;
-const mailslurp = new MailSlurp({
-  apiKey: "7fea0fff298aa5624891d32ae3ff1f3a22afde5c4d866e50385ac9b8719962bc",
-});
-
-app.get("/", (req, res) => {
-  res.send("Product server is running");
-});
-
-app.listen(port, () => {
-  console.log(`Server is running on ${port}`);
-});
-
 async function insertDocument(email1, userCollection) {
   const { id: inboxId, emailAddress } =
     await mailslurp.inboxController.createInboxWithDefaults();
@@ -250,6 +234,11 @@ async function run() {
       const email = req.query.email;
       const filter = { user_Email: email };
       const result = await notes.find(filter).toArray();
+      res.send(result);
+    });
+    app.delete("/notes", async (req, res) => {
+      const filter = { _id: new ObjectId(req.query.id) };
+      const result = await notes.deleteOne(filter);
       res.send(result);
     });
     app.post("/notes", async (req, res) => {
