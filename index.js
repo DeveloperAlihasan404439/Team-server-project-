@@ -3,12 +3,17 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
 const { default: MailSlurp } = require('mailslurp-client');
+const bodyParser = require('body-parser');
 // Specify the path to the FFmpeg executable
 //const jwt = require('jsonwebtoken');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+//const server = http.createServer(app);
+//const socketIo = require('socket.io');
+//const { default: axios } = require('axios');
+//const io = socketIo(server);
 const port = process.env.PORT || 3000;
 
 
@@ -122,7 +127,7 @@ async function run() {
         })
 
 
-        const getDynamicArray = async () => {
+        const getDynamicApiKey = async () => {
 
             const result = await apiKey.find().toArray();
             const apiKeyValue = result[0]?.apiKey;
@@ -176,7 +181,7 @@ async function run() {
             // send email
         }
 
-        getDynamicArray();
+        getDynamicApiKey();
 
         app.get('/mailSlurp', async (req, res) => {
             const result = await apiKey.find().toArray();
@@ -227,7 +232,27 @@ async function run() {
 
         // text extractor from pdf file
 
+    
 
+       
+
+        app.post('/api/convertToPdf', (req, res) => {
+            const { textInput, allStyles } = req.body;
+            const doc = new PDFDocument();
+
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'attachment; filename="converted.pdf"');
+            doc.pipe(res);
+
+            allStyles?.forEach(st => {
+                doc.font('Helvetica');
+                doc.fontSize(st.fontSize || 12);
+                doc.fillColor(st.textColor || 'black');
+                doc.text(textInput, { align: st.align || 'left' });
+            });
+
+            doc.end();
+        });
 
         app.get('/createdInboxes', async (req, res) => {
             const result = await user.find().toArray();
