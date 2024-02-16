@@ -2,22 +2,14 @@ require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
-const pdfParse = require('pdf-parse');
 const { default: MailSlurp } = require('mailslurp-client');
-const bodyParser = require('body-parser');
-const PDFDocument = require('pdfkit');
-const http = require('http')
 // Specify the path to the FFmpeg executable
-const jwt = require('jsonwebtoken');
+//const jwt = require('jsonwebtoken');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-const server = http.createServer(app);
-const socketIo = require('socket.io');
-const { default: axios } = require('axios');
-const io = socketIo(server);
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;
 
 
 app.get('/', (req, res) => {
@@ -102,11 +94,11 @@ async function run() {
         });
 
 
-        app.post('/jwt', async (req, res) => {
-            const user = req.body;
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '1h' });
-            res.send({ token })
-        })
+        // app.post('/jwt', async (req, res) => {
+        //     const user = req.body;
+        //     const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '1h' });
+        //     res.send({ token })
+        // })
 
 
         app.get('/users/admin/:email', async (req, res) => {
@@ -128,6 +120,7 @@ async function run() {
             }
             res.send({ admin, pUser, ordUser });
         })
+
 
         const getDynamicArray = async () => {
 
@@ -234,43 +227,7 @@ async function run() {
 
         // text extractor from pdf file
 
-        app.post('/extractTextFromPDF', async (req, res) => {
-            const { pdfData } = req.body;
-            try {
-                const buffer = Buffer.from(pdfData, 'base64');
-                const extractedText = await extractTextFromPDFWithPdfParse(buffer);
-                res.status(200).json({ text: extractedText });
-            } catch (error) {
-                console.error('Error extracting text from PDF:', error);
-                res.status(500).json({ error: 'Error extracting text from PDF' });
-            }
-        });
 
-        async function extractTextFromPDFWithPdfParse(buffer) {
-            return new Promise((resolve, reject) => {
-                pdfParse(buffer).then(function (data) {
-                    resolve(data.text);
-                });
-            });
-        }
-
-        app.post('/api/convertToPdf', (req, res) => {
-            const { textInput, allStyles } = req.body;
-            const doc = new PDFDocument();
-
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', 'attachment; filename="converted.pdf"');
-            doc.pipe(res);
-
-            allStyles?.forEach(st => {
-                doc.font('Helvetica');
-                doc.fontSize(st.fontSize || 12);
-                doc.fillColor(st.textColor || 'black');
-                doc.text(textInput, { align: st.align || 'left' });
-            });
-
-            doc.end();
-        });
 
         app.get('/createdInboxes', async (req, res) => {
             const result = await user.find().toArray();
