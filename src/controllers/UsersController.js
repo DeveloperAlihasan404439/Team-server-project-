@@ -11,6 +11,21 @@ exports.getSingleUser = async (req, res) => {
   const resutl = await UsersModal.findOne(query);
   res.send(resutl);
 };
+
+exports.putUser = async(req, res)=>{
+    const email = req.params.email;
+    console.log("my email", email);
+    const filter = { email: email };
+    const updateProduct = req.body;
+    const updateDoc = {
+      $set: {
+        role: updateProduct.role,
+      },
+    };
+    const result = await UsersModal.updateOne(filter, updateDoc);
+    res.send(result);
+}
+
 exports.postUser = async (req, res) => {
   const userData = req.body;
   const query = { userEmail: userData.userEmail };

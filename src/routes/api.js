@@ -1,10 +1,11 @@
 const express =require('express');
 const { getReviws, deleteReviews, postReviews } = require('../controllers/ReviewsController');
-const { getUserController, getSingleUser, postUser } = require('../controllers/UsersController');
+const { getUserController, getSingleUser, postUser, putUser } = require('../controllers/UsersController');
 const { getArticles, getSingleArticle, putArticleUpdated, patchArticleRejecte, patchArticleConfirm, patchArticleLikeIncrement, deleteArticle, postArticle } = require('../controllers/Articles');
 const { getNotes, patchNotes, deleteNotes, postNotes } = require('../controllers/NotesConrrollers');
 const { getBlogs } = require('../controllers/BlogsControllers');
 const { getComment, postComment } = require('../controllers/CommentControllers');
+const { GetPaymentMethod, GetPayment, postPayment, PaymentIntents } = require('../controllers/pymentConttollrs');
 
 
 
@@ -21,6 +22,7 @@ router.post("/review",postReviews );
 router.get('/users/single', getSingleUser)
 router.get('/users', getUserController)
 router.post('/check-user', postUser)
+router.put('/user/update', putUser)
 
 
 // Article Manage Api Router
@@ -47,6 +49,12 @@ router.get('/blog', getBlogs)
 router.get('/comment/:id', getComment)
 router.post('/comment', postComment)
 
+
+// payment Manage Api Router
+router.get('/payments', GetPaymentMethod)
+router.get('/payments/:email', GetPayment)
+router.post('/create-payment-intent', PaymentIntents)
+router.post('/payments', postPayment)
 
 module.exports=router;
 
