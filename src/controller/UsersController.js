@@ -2,7 +2,6 @@ const UsersModal = require("../models/Users");
 
 exports.getUserController = async (req, res) => {
   const resutl = await UsersModal.find();
-  console.log(resutl)
   res.send(resutl);
 };
 exports.getSingleUser = async (req, res) => {
@@ -14,7 +13,6 @@ exports.getSingleUser = async (req, res) => {
 
 exports.putUser = async(req, res)=>{
     const email = req.params.email;
-    console.log("my email", email);
     const filter = { email: email };
     const updateProduct = req.body;
     const updateDoc = {
@@ -28,11 +26,14 @@ exports.putUser = async(req, res)=>{
 
 exports.postUser = async (req, res) => {
   const userData = req.body;
-  const query = { userEmail: userData.userEmail };
+  console.log(userData,"line 29")
+  const query = { email: userData.userEmail };
   const isUserExist = await UsersModal.findOne(query);
+  console.log(isUserExist)
   if (isUserExist) {
     return res.send({ message: "UserExist", InsertedId: null });
   }
   const result = await UsersModal.create(userData);
+  console.log(result, 'line 32')
   res.send(result);
 };

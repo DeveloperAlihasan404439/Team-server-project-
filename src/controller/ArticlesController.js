@@ -46,6 +46,7 @@ exports.patchArticleRejecte = async (req, res) => {
 };
 exports.patchArticleConfirm = async (req, res) => {
   const id = req.params.id;
+  console.log(id)
   const filter = { _id: id };
   const updatedDoc = {
     $set: {
@@ -74,6 +75,6 @@ exports.deleteArticle = async(req, res)=>{
     res.send(result)
 }
 exports.postArticle = async(req, res)=>{
-    const result = await ArticleModels.create()
+    const result = await ArticleModels.create(req.body)
     res.send(result)
 }

@@ -13,7 +13,11 @@ const mongoose =require('mongoose');
 
 // Security Middleware Implement
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: [
+    'http://localhost:5173',
+    'https://swifty-mail.surge.sh'
+    
+  ],
   credentials: true,
 }));
 
