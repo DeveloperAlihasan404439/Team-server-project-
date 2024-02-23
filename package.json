@@ -19,7 +19,7 @@
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.5.4",
-    "mongos": "^0.0.0",
-    "nodemon": "^2.0.16"
+    "nodemon": "^2.0.16",
+    "stripe": "^14.17.0"
   }
 }
