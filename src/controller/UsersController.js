@@ -23,6 +23,24 @@ exports.putUser = async(req, res)=>{
     const result = await UsersModal.updateOne(filter, updateDoc);
     res.send(result);
 }
+exports.putProfileUpdated = async(req, res)=>{
+    const email = req.query.email;
+    const filter = { email: email };
+    const options = { upsert: true };
+    const updateProduct = req.body;
+    const updateDoc = {
+      $set: {
+        name: updateProduct.name,
+        photoURL: updateProduct.img,
+        bio: updateProduct.bio,
+        education: updateProduct.education,
+        city: updateProduct.city,
+        mobile: updateProduct.mobile,
+      },
+    };
+    const result = await UsersModal.updateOne(filter, updateDoc,options);
+    res.send(result);
+}
 
 exports.postUser = async (req, res) => {
   const userData = req.body;

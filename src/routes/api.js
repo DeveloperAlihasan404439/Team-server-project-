@@ -1,6 +1,6 @@
 const express =require('express');
 const { getReviws, deleteReviews, postReviews } = require('../controller/ReviewsController');
-const { getUserController, getSingleUser, postUser, putUser } = require('../controller/UsersController');
+const { getUserController, getSingleUser, postUser, putUser, putProfileUpdated } = require('../controller/UsersController');
 // const { getArticles, getSingleArticle, putArticleUpdated, patchArticleRejecte, patchArticleConfirm, patchArticleLikeIncrement, deleteArticle, postArticle } = require('../controller/Articles');
 const { getNotes, patchNotes, deleteNotes, postNotes } = require('../controller/NotesConrrollers');
 const { getBlogs } = require('../controller/BlogsControllers');
@@ -24,6 +24,7 @@ router.get('/users/single', getSingleUser)
 router.get('/users', getUserController)
 router.post('/users/post', postUser)
 router.put('/user/update', putUser)
+router.put('/user/profile/updated', putProfileUpdated)
 
 
 // Article Manage Api Router
