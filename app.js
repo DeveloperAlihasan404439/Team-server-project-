@@ -13,7 +13,10 @@ const mongoose =require('mongoose');
 
 // Security Middleware Implement
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: [
+    'http://localhost:5173',
+    'https://swift-mail-5a7d7.web.app'
+  ],
   credentials: true,
 }));
 

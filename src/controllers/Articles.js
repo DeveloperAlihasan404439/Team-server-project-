@@ -12,6 +12,13 @@ exports.getSingleArticle = async (req, res) => {
   const result = await ArticleModels.findOne(filter);
   res.send(result);
 };
+exports.getUserArticle = async (req, res) => {
+  const email = req.query.email;
+  console.log(email)
+  const filter = { user_Email: email };
+  const result = await ArticleModels.find(filter);
+  res.send(result);
+};
 exports.putArticleUpdated = async (req, res) => {
   const id = req.params.id;
   const filter = { _id: id };
@@ -49,7 +56,7 @@ exports.patchArticleConfirm = async (req, res) => {
   const filter = { _id: id };
   const updatedDoc = {
     $set: {
-      status: "confirm",
+      status: "confrom",
     },
   };
   const result = await ArticleModels.updateOne(filter, updatedDoc);
@@ -74,6 +81,6 @@ exports.deleteArticle = async(req, res)=>{
     res.send(result)
 }
 exports.postArticle = async(req, res)=>{
-    const result = await ArticleModels.create()
+    const result = await ArticleModels.create(req.body)
     res.send(result)
 }

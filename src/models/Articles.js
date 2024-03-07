@@ -13,7 +13,9 @@ const ArticleSchema = mongoose.Schema({
     benefits: {type: Array},
     suggestArticle: {type: Array},
     like: {type: Number},
-    comment: {type: Array},
+    user_Email: {type: String},
+    user_Name: {type: String},
+    user_photo: {type: String},
 })
 const ArticleModels = mongoose.model('articles', ArticleSchema)
 module.exports = ArticleModels;
