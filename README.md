@@ -79,8 +79,4 @@ To get started with this project, follow these steps:
 4. **Project run code:**
    ```
    nodemon
-   # or
-   yarn start
-   # or
-   npm start
    ```
